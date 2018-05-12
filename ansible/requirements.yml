@@ -1,0 +1,4 @@
+---
+  - src: https://github.com/Stouts/Stouts.openvpn
+    version: 1d08b23
+    name: Stouts.openvpn

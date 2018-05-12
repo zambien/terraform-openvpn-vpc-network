@@ -1,0 +1,55 @@
+#
+# Ansible to provision OpenVPN on remote host
+#
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  pre_tasks:
+    - name: Wait up to 600 seconds for EC2 bootstrap
+      wait_for_connection:
+        timeout: 600
+    - name: Gather facts
+      setup:
+  roles:
+    - Stouts.openvpn
+  vars:
+    openvpn_use_pam: yes
+    openvpn_clients:
+      - "{{vpn_name}}"
+    openvpn_use_pam_users:
+    - name: "{{vpn_user}}"
+      password: "{{vpn_password}}"
+
+  # This work, on top of the base openvpn role, allows
+  # clients to forward all traffic through the VPN.
+  # https://openvpn.net/index.php/open-source/documentation/howto.html#redirect
+  tasks:
+  
+    - name: Forward all client traffic through VPN
+      lineinfile:
+        dest: /etc/openvpn/server.conf
+        line: push "redirect-gateway def1"
+
+    # Command below is equivalent to:
+    #  iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+    - name: Set iptables rules for NAT
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        source: 10.8.0.0/24
+        out_interface: eth0
+        jump: MASQUERADE
+
+    # Download the remote files which will be used in any
+    # client-side, i.e. for tunnelblick
+    - name: Grab VPN configuration tarball from remote
+      fetch:
+        src: "/etc/openvpn/keys/{{item}}"
+        dest: ../
+        flat: yes
+      with_items:
+        - "{{vpn_name}}.ovpn"
+        - "{{vpn_name}}.key"
+        - "{{vpn_name}}.crt"
+        - ca.crt
