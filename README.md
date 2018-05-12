@@ -19,7 +19,7 @@ Deploys:
 
 You will need to have your profile configured in ~/.aws/credentials.  
 
-Take a look at the variable.tf to see if you want to change anything.  The default AWS profile is "myprofile".
+Take a look at the variables.tf to see if you want to change anything.  The default AWS profile is "myprofile".
 
 Run the following:
 
